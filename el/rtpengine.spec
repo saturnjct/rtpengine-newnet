@@ -13,7 +13,7 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	gcc make pkgconfig redhat-rpm-config
 BuildRequires:	glib2-devel libcurl-devel openssl-devel pcre-devel
 BuildRequires:	xmlrpc-c-devel zlib-devel
-Requires:	glibc libcurl openssl pcre xmlrpc-c nmap-ncat
+Requires:	glibc libcurl openssl pcre xmlrpc-c
 
 
 %description
