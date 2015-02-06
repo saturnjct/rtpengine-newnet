@@ -1,5 +1,5 @@
 Name:		ngcp-rtpengine
-Version:	git-master-b607045
+Version:	git_master_b607045
 Release:	0%{?dist}
 Summary:	The Sipwise NGCP rtpengine
 
