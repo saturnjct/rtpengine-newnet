@@ -12,66 +12,34 @@
 
 #include "log.h"
 #include "call.h"
+#include "socket.h"
 
-static int graphite_sock=-1;
-static u_int32_t graphite_ipaddress;
-static int graphite_port=0;
+static socket_t graphite_sock;
+static const endpoint_t *graphite_ep;
 static struct callmaster* cm=0;
 //struct totalstats totalstats_prev;
 static time_t next_run;
 
-int connect_to_graphite_server(u_int32_t ipaddress, int port) {
+int connect_to_graphite_server(const endpoint_t *ep) {
+	graphite_ep = ep;
 
-	graphite_sock=-1;
-	//int reconnect=0;
-	int rc=0;
-	struct sockaddr_in sin;
-	memset(&sin,0,sizeof(sin));
-	int val=1;
+	ilog(LOG_INFO, "Connecting to graphite server %s", endpoint_print_buf(ep));
 
-	graphite_ipaddress = ipaddress;
-	graphite_port = port;
-
-	rc = graphite_sock = socket(AF_INET, SOCK_STREAM,0);
-	if(rc<0) {
+	if (connect_socket(&graphite_sock, SOCK_STREAM, ep)) {
 		ilog(LOG_ERROR,"Couldn't make socket for connecting to graphite.");
 		return -1;
 	}
 
-	sin.sin_family=AF_INET;
-	sin.sin_addr.s_addr=graphite_ipaddress;
-	sin.sin_port=htons(graphite_port);
-
-	rc = setsockopt(graphite_sock,SOL_SOCKET,SO_REUSEADDR, &val,sizeof(val));
-	if(rc<0) {
-		ilog(LOG_ERROR,"Couldn't set sockopt for graphite descriptor.");
-		goto error;
-	}
-
-	struct in_addr ip;
-	ip.s_addr = graphite_ipaddress;
-	ilog(LOG_INFO, "Connecting to graphite server %s at port:%i with fd:%i",inet_ntoa(ip),graphite_port,graphite_sock);
-	rc = connect(graphite_sock, (struct sockaddr *)&sin, sizeof(sin));
-	if (rc==-1) {
-		ilog(LOG_ERROR, "Connection could not be established. Trying again next time of graphite-interval.");
-		goto error;
-	}
-
 	ilog(LOG_INFO, "Graphite server connected.");
 
-	return graphite_sock;
-
-error:
-	close(graphite_sock);
-	graphite_sock = -1;
-	return -1;
+	return 0;
 }
 
 int send_graphite_data() {
 
 	int rc=0;
 
-	if (graphite_sock < 0) {
+	if (graphite_sock.fd < 0) {
 		ilog(LOG_ERROR,"Graphite socket is not connected.");
 		return -1;
 	}
@@ -118,7 +86,7 @@ int send_graphite_data() {
 	rc = sprintf(ptr,"%s.totals.silent_timeout_sess "UINT64F" %llu\n",hostname, atomic64_get_na(&ts.total_silent_timeout_sess),(unsigned long long)g_now.tv_sec); ptr += rc;
 	rc = sprintf(ptr,"%s.totals.timeout_sess "UINT64F" %llu\n",hostname, atomic64_get_na(&ts.total_timeout_sess),(unsigned long long)g_now.tv_sec); ptr += rc;
 
-	rc = write(graphite_sock, data_to_send, ptr - data_to_send);
+	rc = write(graphite_sock.fd, data_to_send, ptr - data_to_send);
 	if (rc<0) {
 		ilog(LOG_ERROR,"Could not write to graphite socket. Disconnecting graphite server.");
 		goto error;
@@ -126,7 +94,7 @@ int send_graphite_data() {
 	return 0;
 
 error:
-	close(graphite_sock); graphite_sock=-1;
+	close_socket(&graphite_sock);
 	return -1;
 }
 
@@ -143,8 +111,8 @@ void graphite_loop_run(struct callmaster* callmaster, int seconds) {
 	if (!cm)
 		cm = callmaster;
 
-	if (graphite_sock < 0) {
-		rc = connect_to_graphite_server(graphite_ipaddress, graphite_port);
+	if (graphite_sock.fd < 0) {
+		rc = connect_to_graphite_server(graphite_ep);
 	}
 
 	if (rc>=0) {
@@ -166,7 +134,7 @@ void graphite_loop(void *d) {
 		cm->conf.graphite_interval=1;
 	}
 
-	connect_to_graphite_server(cm->conf.graphite_ip,graphite_port);
+	connect_to_graphite_server(&cm->conf.graphite_ep);
 
 	while (!g_shutdown)
 		graphite_loop_run(cm,cm->conf.graphite_interval); // time in seconds
