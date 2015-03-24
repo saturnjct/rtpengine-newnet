@@ -39,7 +39,7 @@ MODULE=0
 
 build_opts() {
 	shopt -s nocasematch
-	RPMS=`rpm -qa | grep ngcp-rtpengine-kernel`
+	RPMS=`rpm -qa | grep rtpengine-kernel`
 	if [[ "$KERNEL" == "yes" && -n "$TABLE" && -n "$RPMS" ]]
 	then
 		MODULE=1
@@ -141,6 +141,16 @@ build_opts() {
         if [[ -n "$DELETE_DELAY" ]]
          then
                  OPTS+=" --delete-delay=$DELETE_DELAY"
+        fi
+
+        if [[ -n "$GRAPHITE" ]]
+         then
+                 OPTS+=" --graphite=$GRAPHITE"
+        fi
+
+        if [[ -n "$GRAPHITE_INTERVAL" ]]
+         then
+                 OPTS+=" --graphite-interval=$GRAPHITE_INTERVAL"
         fi
 
 	if [[ -n "$LOG_FACILITY_CDR" ]]

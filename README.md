@@ -32,7 +32,6 @@ the following additional features are available:
   + Bridging between ICE-enabled and ICE-unaware user agents
   + Optionally acting only as additional ICE relay/candidate
   + Optionally forcing relay of media streams by removing other ICE candidates
-  + Supports ice-lite only
 - SRTP (RFC 3711) support:
   + Support for SDES (RFC 4568) and DTLS-SRTP (RFC 5764)
   + AES-CM and AES-F8 ciphers, both in userspace and in kernel
@@ -184,6 +183,8 @@ option and which are reproduced below:
 	  -d, --delete-delay               Delay for deleting a session from memory.
 	  --sip-source                     Use SIP source address by default
 	  --dtls-passive                   Always prefer DTLS passive role
+	  -g, --graphite=[IP46:]PORT       TCP address of graphite statistics server
+	  -w, --graphite-interval=INT      Graphite data statistics send interval
 
 Most of these options are indeed optional, with two exceptions. It's mandatory to specify at least one local
 IP address through `--interface`, and at least one of the `--listen-...` options must be given.
@@ -353,6 +354,14 @@ The options are described in more detail below.
 * -r, --redis, -R, --redis-db, -b, --b2b-url
 
 	NGCP-specific options
+
+* -g, --graphite
+
+	Address of the graphite statistics server.
+
+* -w, --graphite-interval
+
+	Interval of the time when information is sent to the graphite server.
 
 A typical command line (enabling both UDP and NG protocols) thus may look like:
 
